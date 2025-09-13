@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura - Voice Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .command-chip {
+      display: inline-block;
+      margin: 0.2rem;
+      padding: 0.3rem 0.6rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .command-chip:hover {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-lg p-6 bg-gray-800 rounded-2xl shadow-xl">
+    <h1 class="text-3xl font-bold mb-6 text-center">Aura - Voice Assistant</h1>
+
+    <div class="mb-4">
+      <p class="text-sm text-gray-400 mb-2">Try saying:</p>
+      <div id="commands" class="flex flex-wrap">
+        <span class="command-chip" onclick="useCommand('open youtube')">Open YouTube</span>
+        <span class="command-chip" onclick="useCommand('open google')">Open Google</span>
+        <span class="command-chip" onclick="useCommand('open gmail')">Open Gmail</span>
+        <span class="command-chip" onclick="useCommand('open github')">Open GitHub</span>
+        <span class="command-chip" onclick="useCommand('open facebook')">Open Facebook</span>
+        <span class="command-chip" onclick="useCommand('open twitter')">Open Twitter</span>
+        <span class="command-chip" onclick="useCommand('open instagram')">Open Instagram</span>
+        <span class="command-chip" onclick="useCommand('open linkedin')">Open LinkedIn</span>
+        <span class="command-chip" onclick="useCommand('open reddit')">Open Reddit</span>
+        <span class="command-chip" onclick="useCommand('open wikipedia')">Open Wikipedia</span>
+        <span class="command-chip" onclick="useCommand('open calculator')">Open Calculator</span>
+        <span class="command-chip" onclick="useCommand('open notepad')">Open Notepad</span>
+        <span class="command-chip" onclick="useCommand('open command prompt')">Open Command Prompt</span>
+      </div>
+    </div>
+
+    <div id="chat-box" class="h-80 overflow-y-auto bg-gray-700 p-4 rounded-lg mb-4"></div>
+
+    <div class="flex gap-2">
+      <input id="userInput" type="text" placeholder="Ask me anything..." 
+        class="flex-1 px-4 py-2 rounded-lg text-black focus:outline-none"
+        onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button onclick="sendMessage()" class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700">Send</button>
+      <button onclick="toggleListening()" id="micButton" class="px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700">🎤</button>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("userInput");
+
+    function useCommand(command) {
+      userInput.value = command;
+      sendMessage();
+    }
+
+    function addMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = sender === "You" ? "text-right mb-2" : "text-left mb-2";
+      div.innerHTML = `
+        <p class="px-3 py-2 inline-block rounded-lg ${sender === "You" ? 'bg-blue-600' : 'bg-gray-600'}">
+          <b>${sender}:</b> ${text}
+        </p>
+      `;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+      
+      addMessage("You", message);
+      userInput.value = "";
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: message })
+        });
+        const data = await response.json();
+        addMessage("Aura", data.response);
+        speak(data.response);
+      } catch (error) {
+        addMessage("Aura", "Error connecting to the server");
+      }
+    }
+
+    let recognition = null;
+    let isListening = false;
+
+    function toggleListening() {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    }
+
+    function startListening() {
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      document.getElementById("micButton").classList.add("bg-gray-400");
+      document.getElementById("micButton").classList.remove("bg-green-600", "hover:bg-green-700");
+      
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        userInput.value = transcript;
+        sendMessage();
+      };
+
+      isListening = true;
+      document.getElementById("micButton").classList.remove("bg-green-600");
+      document.getElementById("micButton").classList.add("bg-red-600");
+      recognition.start();
+    }
+
+    function stopListening() {
+      if (recognition) {
+        recognition.stop();
+        isListening = false;
+        document.getElementById("micButton").classList.remove("bg-red-600");
+        document.getElementById("micButton").classList.add("bg-green-600");
+      }
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    }
+  </script>
+</body>
+</html>
