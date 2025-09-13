@@ -49,15 +49,6 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 
 ---
 
-## 🖥️ Screenshots
-
-<p align="center">
-	<img src="https://placehold.co/600x350?text=Aura+Home+Screen" alt="Aura Home Screen" width="400">
-	<img src="https://placehold.co/600x350?text=Voice+Command+in+Action" alt="Voice Command" width="400">
-</p>
-
----
-
 ## 🛠️ Tech Stack
 
 - **Backend:** Flask, Python
